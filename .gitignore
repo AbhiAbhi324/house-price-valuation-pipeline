@@ -1,0 +1,23 @@
+# Data files (Crucial: never push large raw csv datasets to GitHub)
+data/
+*.csv
+*.xlsx
+*.zip
+
+# Virtual Environments (Python local environment files)
+venv/
+.venv/
+env/
+ENV/
+
+# Python Cache & Compiled Files
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# IDE Settings & Operating System Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
