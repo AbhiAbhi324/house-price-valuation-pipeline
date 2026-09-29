@@ -27,7 +27,13 @@ def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
 def load_raw_data(path: Path | str | None = None) -> pd.DataFrame:
     path = Path(path) if path else find_raw_file()
     df = pd.read_csv(path)
-    return normalize_column_names(df)   
+    return normalize_column_names(df) 
+def clean_raw_data(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.drop(columns=['order', 'pid'], errors='ignore')
+    df = df[df['gr_liv_area'] <= 4000]
+    if "garage_yr_blt" in df.columns:
+        df['garage_yr_blt'] = df['garage_yr_blt'].replace(2207, 2007)
+    return df
 
 
 
@@ -39,8 +45,8 @@ def main() -> None:
     parser.add_argument("--raw", type=Path, default=None, help="Path to raw CSV (default: data/raw/AmesHousing.csv)")
     args = parser.parse_args()
     print(args.raw)
-    df=load_raw_data(args.raw)
-    print(f"Loaded raw data with shape: {df.columns}")
+    df=clean_raw_data(load_raw_data(args.raw))
+    print(f"Loaded raw data with shape: {df.shape}")
 
 
 if __name__ == "__main__":
