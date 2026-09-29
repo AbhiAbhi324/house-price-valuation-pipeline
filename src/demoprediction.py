@@ -127,13 +127,8 @@ single_house_1 = {
     "neighborhood": "NAmes",
     "sale_condition": "Normal",
     "overall_cond": 5,
-    "exter_cond": "TA",
-    "house_style": "1Story"
+    "exter_cond": "TA"
 }
-
-
-
-
 
 single_house_target=215000
 
