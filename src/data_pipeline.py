@@ -15,6 +15,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"
 OUT_DIR = ROOT / "data" / "processed"
+MODELS_DIR = ROOT / "models"
 
 RAW_FILE_NAME ="AmesHousing.csv"
 
@@ -109,9 +110,6 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         if not isinstance(X, pd.DataFrame):
             raise TypeError("FeatureEngineer expects a pandas DataFrame with named columns.")
         return X
-
-def build_preprocessor() -> Pipeline:
-    pass
 
 def build_pipeline(regressor)-> Pipeline:
     return Pipeline([
