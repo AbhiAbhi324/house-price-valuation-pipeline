@@ -6,6 +6,8 @@ from pathlib import Path
 import numpy as np 
 import pandas as pd 
 
+from src.evaluate import evaluate_model
+
 
 
 BASELINE_PARAMS = {
@@ -40,8 +42,11 @@ def main():
     y_val_dollars = np.expm1(y_val_log)
 
     baseline=fit_final(args.model, BASELINE_PARAMS[args.model], X_train, y_train_log)
-    print(baseline.predict(X_val.iloc[0:1]))
-    print(y_val_dollars.iloc[0])
+    baseline_metrics =evaluate_model(baseline, X_val, y_val_dollars)
+    for metric_name, val in baseline_metrics.items():
+         print(f"{metric_name.upper():<6} : {val:.4f}")
+
+    
 
 if __name__ == "__main__":
 
