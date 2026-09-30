@@ -1,25 +1,17 @@
 import pandas as pd
 import joblib
 from pathlib import Path
+from src.train import top_30_features
 
 model_path = Path(__file__).resolve().parent.parent / "models" / "xgboost_baseline.joblib"
 
 model=joblib.load(model_path)
 
+def pred_features(top_30_features)-> list:
 
+    top_30_model_features = top_30_features
 
-top_30_model_features = [
-    'num__overall_qual', 'cat__bsmt_qual_Ex', 'cat__exter_qual_TA', 'num__total_sq_ft', 
-    'cat__central_air_N', 'cat__exter_qual_Ex', 'num__garage_cars', 'cat__garage_cond_TA', 
-    'cat__ms_zoning_RL', 'cat__bsmt_qual_Gd', 'cat__kitchen_qual_TA', 'num__total_bathrooms', 
-    'num__fireplaces', 'cat__paved_drive_N', 'cat__roof_style_Mansard', 'cat__central_air_Y', 
-    'cat__bsmt_qual_TA', 'cat__paved_drive_Y', 'cat__ms_zoning_RM', 'num__year_remod/add', 
-    'cat__kitchen_qual_Ex', 'cat__exter_qual_Gd', 'num__gr_liv_area', 'num__property_age', 
-    'cat__functional_Sal', 'cat__fireplace_qu_None', 'cat__neighborhood_Crawfor', 
-    'cat__sale_condition_Abnorml', 'num__overall_cond', 'cat__exter_cond_Po'
-]
-
-raw_data_features = [
+    raw_data_features = [
     'ms_subclass', 'ms_zoning', 'lot_frontage', 'lot_area', 'street', 'alley', 
     'lot_shape', 'land_contour', 'utilities', 'lot_config', 'land_slope', 
     'neighborhood', 'condition_1', 'condition_2', 'bldg_type', 'house_style', 
@@ -38,39 +30,37 @@ raw_data_features = [
     'misc_val', 'mo_sold', 'yr_sold', 'sale_type', 'sale_condition'
 ]
 
-engineered_mappings = {
+    engineered_mappings = {
     "total_sq_ft": ["1st_flr_sf", "2nd_flr_sf", "total_bsmt_sf"],
     "total_bathrooms": ["full_bath", "half_bath", "bsmt_full_bath", "bsmt_half_bath"],
     "property_age": ["yr_sold", "year_built"]
 }
 
 
-filtered_raw_features = []
+    filtered_raw_features = []
 
-for item in top_30_model_features:
+    for item in top_30_model_features:
 
-    if item.startswith("num__"):
-        clean_name = item.replace("num__", "")
-    elif item.startswith("cat__"):
-        clean_name = item.replace("cat__", "")
-        if "_" in clean_name:
-            clean_name = clean_name.rsplit("_", 1)[0]
-    else:
-        clean_name = item
-    if clean_name not in filtered_raw_features:
-        if clean_name not in raw_data_features:
-              for dependency in engineered_mappings[clean_name]:
-                if dependency not in filtered_raw_features:
-                    filtered_raw_features.append(dependency)
-        else:
-            filtered_raw_features.append(clean_name)
-
-print("--- FILTERED ORIGINAL RAW DATA COLUMNS ---")
-print(filtered_raw_features)
-print(f"\nTotal inputs required for web inference: {len(filtered_raw_features)}")
+      if item.startswith("num__"):
+          clean_name = item.replace("num__", "")
+      elif item.startswith("cat__"):
+          clean_name = item.replace("cat__", "")
+          if "_" in clean_name:
+              clean_name = clean_name.rsplit("_", 1)[0]
+      else:
+          clean_name = item
+      if clean_name not in filtered_raw_features:
+          if clean_name not in raw_data_features:
+                for dependency in engineered_mappings[clean_name]:
+                  if dependency not in filtered_raw_features:
+                      filtered_raw_features.append(dependency)
+          else:
+              filtered_raw_features.append(clean_name)
+    return filtered_raw_features
 
 
-single_house = {
+def main()-> None:
+  single_house = {
     "gr_liv_area": 1656,       
     "1st_flr_sf": 1656,         
     "2nd_flr_sf": 0,            
@@ -99,7 +89,7 @@ single_house = {
     "neighborhood": "NAmes",    
     "house_style": "1Story"
 }
-single_house_1 = {
+  single_house_1 = {
     "overall_qual": 6,
     "bsmt_qual": "TA",
     "exter_qual": "TA",
@@ -130,12 +120,12 @@ single_house_1 = {
     "exter_cond": "TA"
 }
 
-single_house_target=215000
+  single_house_target=215000
 
-input_df = pd.DataFrame([single_house_1])
-predicted_price = model.predict(input_df)
+  input_df = pd.DataFrame([single_house_1])
+  predicted_price = model.predict(input_df)
 
-print("\n--- Model Inference Verification ---")
-print(f"Predicted Price : ${predicted_price[0]:,.2f}")
-print(f"Actual Price    : ${single_house_target:,.2f}")
-print(f"Difference      : ${abs(predicted_price[0] - single_house_target):,.2f}")
+  print("\n--- Model Inference Verification ---")
+  print(f"Predicted Price : ${predicted_price[0]:,.2f}")
+  print(f"Actual Price    : ${single_house_target:,.2f}")
+  print(f"Difference      : ${abs(predicted_price[0] - single_house_target):,.2f}")

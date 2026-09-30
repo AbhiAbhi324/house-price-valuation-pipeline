@@ -11,7 +11,7 @@ import pandas as pd
 from src.evaluate import evaluate_model
 
 
-
+top_30_features = None
 BASELINE_PARAMS = {
     "xgboost": dict(n_estimators=1000, learning_rate=0.05, max_depth=4, subsample=0.8, colsample_bytree=0.6),
     "lightgbm": dict(n_estimators=1000, learning_rate=0.05, num_leaves=15, subsample=0.8, colsample_bytree=0.6),
@@ -43,12 +43,15 @@ def print_top_features(baseline, pipeline_preprocessor, n_top=30) -> None:
         "Feature": feature_names,
         "Importance": importances
     }).sort_values(by="Importance", ascending=False)
-    
-    print(f"\n--- TOP {n_top} MOST POWERFUL MODEL FEATURES ---")
-    for rank, row in enumerate(feature_imp_df.head(n_top).itertuples(), 1):
-        print(f"Rank {rank:02d} | {row.Feature:<35} | Score: {row.Importance:.4f}")
         
     return feature_imp_df.head(n_top)["Feature"].tolist()
+
+def new_val_df(X_val)->pd.DataFrame:
+    global top_30_features 
+    from src.demoprediction import pred_features
+    pred_features_22=pred_features(top_30_features)
+    filtered_df = X_val[pred_features_22]
+    return filtered_df
 
 def main():
     parser = argparse.ArgumentParser(description="Tune and train the house price model.")
@@ -65,7 +68,7 @@ def main():
 
     print("TOTAL FEATURES ")
     print(len(baseline.regressor_.named_steps["preprocessor"].get_feature_names_out()))
-    print(baseline.regressor_.named_steps["preprocessor"].get_feature_names_out())
+
 
     val_preds_dollars = baseline.predict(X_val.head(5))
     print("\n--- First 5 House Price Predictions ---")
@@ -76,11 +79,14 @@ def main():
     for i, actual_price in enumerate(y_val_dollars.head(5)):
         print(f"House {i+1}: ${actual_price:,.2f}")
 
-
+    global top_30_features
     active_preprocessor = baseline.regressor_.named_steps["preprocessor"]
     top_30_features = print_top_features(baseline, active_preprocessor, n_top=30)
-    print("\nTop 30 Feature Names List Compiled:")
-    print(top_30_features)
+
+    X_val_22=new_val_df(X_val)
+    baseline_metrics =evaluate_model(baseline, X_val_22, y_val_dollars)
+    for metric_name, val in baseline_metrics.items():
+             print(f"{metric_name.upper():<6} : {val:.4f}")
 
 
     MODELS_DIR.mkdir(exist_ok=True)
