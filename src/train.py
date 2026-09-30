@@ -83,6 +83,8 @@ def main():
     active_preprocessor = baseline.regressor_.named_steps["preprocessor"]
     top_30_features = print_top_features(baseline, active_preprocessor, n_top=30)
 
+
+    print("PREDICTED WITH TOP 22 FEATURES")
     X_val_22=new_val_df(X_val)
     baseline_metrics =evaluate_model(baseline, X_val_22, y_val_dollars)
     for metric_name, val in baseline_metrics.items():

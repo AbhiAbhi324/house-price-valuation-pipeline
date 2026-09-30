@@ -7,7 +7,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer, TransformedTargetRegressor, make_column_selector
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.pipeline import Pipeline
-from sklearn.impute import SimpleImputer
+from sklearn.impute import SimpleImputer,KNNImputer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
@@ -21,6 +21,8 @@ RAW_FILE_NAME ="AmesHousing.csv"
 
 RANDOM_STATE = 42
 TARGET = "saleprice"
+
+
 
 SPARSE_COLS = ["pool_qc", "misc_feature", "alley", "garage_yr_blt"]
 REDUNDANT_COLS = [
@@ -65,6 +67,7 @@ def make_splits(df: pd.DataFrame, test_size: float = 0.2, random_state: int = RA
        y_train = y.iloc[train_index]
        y_val = y.iloc[val_index]
     return X_train, X_val, y_train, y_val
+
 def save_processed_data(X_train: pd.DataFrame, X_val: pd.DataFrame, y_train: pd.DataFrame, y_val: pd.DataFrame)->None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     X_train.to_csv(OUT_DIR / "X_train.csv", index=False)
@@ -117,16 +120,45 @@ def build_pipeline(regressor)-> Pipeline:
         ("preprocessor", build_preprocessor()),
         ("regressor", regressor),
     ])
+
 def build_preprocessor() -> ColumnTransformer:
-    num = Pipeline([("imputer", SimpleImputer(strategy="median")), ("scaler", StandardScaler())])
+    multivariate_numeric_cols = [
+        'lot_frontage', 'lot_area', 'mas_vnr_area', 'bsmt_fin_sf_1', 
+        'bsmt_fin_sf_2', 'bsmt_unf_sf', 'garage_area', 'wood_deck_sf', 
+        'open_porch_sf', 'enclosed_porch', '3ssn_porch', 'screen_porch', 
+        'pool_area', 'misc_val', 'garage_yr_blt'
+    ]
+    
+    univariate_numeric_cols = [
+        'mo_sub_class', 'low_qual_fin_sf', 'mo_sold',
+        'total_sq_ft', 'total_bathrooms', 'property_age' 
+    ]
+
+    smart_num = Pipeline([
+        ("knn_imputer", KNNImputer(n_neighbors=5, weights="distance")),
+        ("scaler", StandardScaler())
+    ])
+
+    fast_num = Pipeline([
+        ("median_imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler())
+    ])
+
     cat = Pipeline([
         ("imputer", SimpleImputer(strategy="constant", fill_value="None")),
         ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
     ])
-    return ColumnTransformer([
-        ("num", num, make_column_selector(dtype_include=np.number)),
+
+    preprocessor = ColumnTransformer([
+        ("smart_num", smart_num, multivariate_numeric_cols),
+        ("fast_num", fast_num, univariate_numeric_cols),
         ("cat", cat, make_column_selector(dtype_exclude=np.number)),
-    ])
+    ], remainder="passthrough")
+
+    preprocessor.set_output(transform="pandas")
+
+    return preprocessor
+
     
 def wrap_log_target(pipeline)-> TransformedTargetRegressor:
     return TransformedTargetRegressor(
